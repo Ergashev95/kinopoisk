@@ -56,9 +56,6 @@ let awaited = new Swiper(`.popular__actors-slider`, {
     }
 });
 
-
-
-
 const headerBtn = document.querySelector('.header__btn'),
        headerItems = document.querySelector('.header__items'),
        headerAbs = document.querySelector('.header__abs'),
@@ -82,14 +79,11 @@ headerAbs.addEventListener('click',(e) => {
     }
 })
 
-
-
-
 // request 
 
 const host = "https://kinopoiskapiunofficial.tech";
 const hostName = "X-API-KEY"
-const hostValue = "f93dc692-5336-4064-81f0-3dda437ccf95"
+const hostValue = "8cde03f0-6c7e-4b87-93a3-fdc689d260d5"
 
 class Kino {
      date
@@ -119,9 +113,9 @@ class Kino {
 
     getTopMovies = (page) => this.fOpen(`${host}/api/v2.2/films/collections?type=TOP_250_TV_SHOWS&page=${page}`)
     getSoloFilms = (id) => this.fOpen(`${host}/api/v2.2/films/${id}`)
-
+ 
     getMostAwaited = (month =  this.curMonth,year = this.curYear) => this.fOpen(`${host}/api/v2.2/films/premieres?year=${year}&month=${month}`)
-   
+    getPrimier = (month = this.curMonth,year = this.curYear) => this.fOpen(`${host}/api/v2.2/films/premieres?year=${year}&month=${month}`)
 
 }
 
@@ -136,20 +130,13 @@ console.log(db.getMostAwaited())
 
 // render Trend and  awaited 
 
-
-
-function renderTrendMovies(elem =[],fn = [],films = [],page = []){
+function renderTrendMovies(elem,fn,films,page ){
     anime.classList.add('active')
-
-    elem.forEach((item,i) => {
-        let parent = document.querySelector(`${item} .swiper-wrapper`)
-        console.log(db[fn[i]](page[i]))
-        db[fn[i]](page[i]).then(data => {
-            data[films[i]].forEach(el => {
-                console.log(el)
+        let parent = document.querySelector(`${elem} .swiper-wrapper`)
+        db[fn](page).then(data => {
+            data[films].forEach(el => {
                 let slide = document.createElement('div')
                 slide.classList.add('swiper-slide')
-
                 slide.innerHTML = `
                       <div class="movie__item">
                             <img src="${el.posterUrlPreview}" alt="" loading="lazy">
@@ -158,18 +145,102 @@ function renderTrendMovies(elem =[],fn = [],films = [],page = []){
                 parent.append(slide)
             })
         })
-
-    })
-
     anime.classList.remove('active')
 }
 
-renderTrendMovies([".trend__tv-slider",".popular__actors-slider"],["getTopMovies","getMostAwaited"],["items","items"],[1,1])
+renderTrendMovies(".trend__tv-slider","getTopMovies","items",1)
 
 
 
+  
+// renderAwaited  
 
 
+function renderAwaited(elem,fn,films){
+    anime.classList.add('active')
+    let parent = document.querySelector(`${elem} .swiper-wrapper`)
+    console.log(parent)
+    db.getMostAwaited()   
+    db[fn]().then(data => {
+        data[films].forEach(el => {
+            let slide = document.createElement('div')
+            slide.classList.add('swiper-slide')
 
+            slide.innerHTML = `
+                  <div class="movie__item">
+                        <img src="${el.posterUrlPreview}" alt="" loading="lazy">
+                    </div>
+            `
+            parent.append(slide)
+        })
+    })
+    anime.classList.remove('active')
+}
+
+renderAwaited(".popular__actors-slider","getMostAwaited","items")
+
+
+// render header
+
+
+function randMovies(num) {
+    return Math.trunc(Math.random() * num + 1)
+}
+
+
+function renderHeader(page){
+    db.getTopMovies(page).then(data => {
+        console.log(data)
+        anime.classList.add('active')
+
+        let max = randMovies(data.items.length)
+        let kinopoiskId = data.items[max].kinopoiskId
+        
+        db.getSoloFilms(kinopoiskId).then(response => {
+            console.log(response)
+
+            let headerText = document.querySelector(".header__text")
+
+            headerText.innerHTML = `
+                <h1 class="header__title">${response.nameRu || response.nameEn}</h1>
+                    <div class="header__balls">
+                        <span class="header__year">${response.year}</span>
+                        <span class="logo__span header__rating  header__year ">${response.ratingAgeLimits}+</span>
+                        <div class="header__seasons header__year">${response.ratingAwaitCount}+</div>
+                        <div class="header__stars header__year"><span class="icon-solid"></span><strong>${response.ratingImdb}</strong></div>
+                    </div>
+                    <p class="header__descr">
+                       ${response.description}
+                    </p>
+                    <div class="header__buttons">
+                        <a href="${response.webUrl}" class="header__watch"><span class="icon-solid"></span>watch</a>
+                        <a href="#" class="header__more header__watch movie__item">More information</a>
+                    </div>
+            `
+        })
+
+        anime.classList.remove('active')
+    })
+}
+
+let page = 13;
+let rand = randMovies(page)
+console.log(rand)
+renderHeader(rand)
+
+// current date 
+
+const popularActorsTitle = document.querySelector('.popular__actors-title strong')
+const comingSoonBlock = document.querySelector('.coming__soon-block img')
+const year = document.querySelector('.year')
+
+popularActorsTitle.innerHTML = `${db.curMonth} ${db.curYear}`
+year.innerHTML = `${db.curYear}`
+
+db.getPrimier().then(res => {
+    console.log(res)
+    let rand = randMovies(res.total)
+    comingSoonBlock.src = res.items[rand].posterUrlPreview
+})
 
 
